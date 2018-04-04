@@ -3,4 +3,4 @@ M:	-
 S:	Maintained
 F:	board/microsys/mpxs32v234/
 F:	include/configs/mpxs32v234.h
-F:	configs/mpxs32v234_defconfig
+F:	configs/s32v234sbc_defconfig
