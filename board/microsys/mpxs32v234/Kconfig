@@ -1,3 +1,5 @@
+# (C) Copyright 2017 MicroSys Electronics GmbH
+
 if TARGET_MPXS32V234
 
 config SYS_BOARD
@@ -10,7 +12,7 @@ config SYS_VENDOR
 
 config SYS_CONFIG_NAME
 	string
-	default "mpxs32v234"
+	default "s32v234sbc"
 
 # S32V234EVB rev. A board with DDR3 has 4x512 MB DDR chips
 # DDR0(512MB) and DDR1(512MB).
@@ -20,14 +22,7 @@ config SYS_CONFIG_NAME
 
 config SYS_DDR_SIZE
 	int
-	default 2147483648 if S32V234_DDR3
-	default 268435456 if S32V234_LPDDR2
-
-config PHY_RGMII_DIRECT_CONNECTED
-	bool "Enable fixed PHY for MDIO Bus/PHY emulation with fixed speed/link PHYs"
-	default n
-	help
-	  Adds the platform "fixed" MDIO Bus to cover the boards that
-	  use PHYs that are not connected to the real MDIO bus.
+	default 2147483648 if S32_DDR3
+	default 268435456 if S32_LPDDR2
 
 endif

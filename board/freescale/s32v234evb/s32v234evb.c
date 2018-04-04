@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2013-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2017 NXP
+ * (C) Copyright 2016-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -14,7 +14,40 @@
 #include <netdev.h>
 #include <i2c.h>
 
+#ifdef CONFIG_PHY_MICREL
+#include <micrel.h>
+#endif
+
+#ifdef CONFIG_SJA1105
+#include "sja1105.h"
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
+
+#ifdef CONFIG_FSL_DSPI
+static void setup_iomux_dspi(void)
+{
+	/* Muxing for DSPI0 */
+
+	/* Configure Chip Select Pins */
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS0_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB8));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS4_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC0));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS5_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC1));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS6_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC2));
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_CS7_OUT, SIUL2_MSCRn(SIUL2_MSCR_PC3));
+
+	/* MSCR */
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SOUT_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB6));
+
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SCK_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB5));
+
+	writel(SIUL2_PAD_CTRL_DSPI0_MSCR_SIN_OUT, SIUL2_MSCRn(SIUL2_MSCR_PB7));
+
+	/* IMCR */
+	writel(SIUL2_PAD_CTRL_DSPI0_IMCR_SIN_IN,
+		SIUL2_IMCRn(SIUL2_PB7_IMCR_SPI0_SIN));
+}
+#endif
 
 static void setup_iomux_uart(void)
 {
@@ -82,6 +115,17 @@ static void mscm_init(void)
 
 int board_phy_config(struct phy_device *phydev)
 {
+#ifdef CONFIG_PHY_MICREL
+	/* Enable all AutoNeg capabilities */
+	ksz9031_phy_extended_write(phydev, 0x02,
+				   MII_KSZ9031_EXT_OP_MODE_STRAP_OVRD,
+				   MII_KSZ9031_MOD_DATA_NO_POST_INC,
+				   MII_KSZ9031_EXT_OMSO_RGMII_ALL_CAP_OVRD);
+
+	/* Reset the PHY so that the previous changes take effect */
+	phy_write(phydev, CONFIG_FEC_MXC_PHYADDR, MII_BMCR, BMCR_RESET);
+#endif
+
 	if (phydev->drv->config)
 		phydev->drv->config(phydev);
 
@@ -110,32 +154,63 @@ void setup_xrdc(void)
 #ifdef CONFIG_DCU_QOS_FIX
 int board_dcu_qos(void)
 {
+#if defined(CONFIG_S32V234EVB_29288)
+	struct src *src_regs = (struct src *)SRC_SOC_BASE_ADDR;
+	writel(MIN_DCU_QOS_PRIORITY << SRC_GPR8_2D_ACE_QOS_OFFSET,
+	       &src_regs->gpr8);
+#else
+	/* m_fastdma1_ib */
 	writel(0x0, 0x40012380);
 	writel(0x0, 0x40012384);
+
+	/* m_gpu0 */
 	writel(0x0, 0x40012480);
 	writel(0x0, 0x40012484);
+
+	/* m_h264dec */
 	writel(0x0, 0x40012580);
 	writel(0x0, 0x40012584);
+
+	/* m_gpu1 */
 	writel(0x0, 0x40012680);
 	writel(0x0, 0x40012684);
+
+	/* m_cores_cci1_ib */
 	writel(0x0, 0x40012780);
 	writel(0x0, 0x40012784);
+
+	/* m_cores_cci1_ib */
 	writel(0x0, 0x40012880);
 	writel(0x0, 0x40012884);
+
+	/* m_apex0_blkdm a */
 	writel(0x0, 0x40012980);
 	writel(0x0, 0x40012984);
+
+	/* m_apex1_dma */
 	writel(0x0, 0x40012A80);
 	writel(0x0, 0x40012A84);
+
+	/* m_apex1_blkdma */
 	writel(0x0, 0x40012B80);
 	writel(0x0, 0x40012B84);
+
+	/* m_pcie */
 	writel(0x0, 0x40012C80);
 	writel(0x0, 0x40012C84);
+
+	/* m_enet0 */
 	writel(0x0, 0x40012D80);
 	writel(0x0, 0x40012D84);
+
+	/* m_enet1 */
 	writel(0x0, 0x40012E80);
 	writel(0x0, 0x40012E84);
+
+	/* m_cores_cci0 */
 	writel(0x0, 0x40012F80);
 	writel(0x0, 0x40012F84);
+#endif
 
 	return 0;
 }
@@ -149,6 +224,9 @@ int board_early_init_f(void)
 	setup_iomux_uart();
 	setup_iomux_enet();
 	setup_iomux_i2c();
+#ifdef CONFIG_FSL_DSPI
+	setup_iomux_dspi();
+#endif
 #ifdef CONFIG_SYS_USE_NAND
 	setup_iomux_nfc();
 #endif
@@ -175,6 +253,21 @@ int checkboard(void)
 	printf("Board: %s\n", CONFIG_SYS_CONFIG_NAME);
 
 	return 0;
+}
+
+void board_net_init(void)
+{
+#ifdef CONFIG_SJA1105
+	/* Only probe the switch if we are going to use networking.
+	 * The probe has a self check so it will quietly exit if we call it
+	 * twice.
+	 */
+	sja1105_probe(SJA_1_CS, SJA_1_BUS);
+	/* The SJA switch can have its ports RX lines go out of sync. They need
+	 * to be reseted in order to allow network traffic.
+	 */
+	sja1105_reset_ports(SJA_1_CS, SJA_1_BUS);
+#endif
 }
 
 

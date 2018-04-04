@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2015-2016 Freescale Semiconductor, Inc.
- * (C) Copyright 2016-2017 NXP
+ * (C) Copyright 2016-2018 NXP
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -12,10 +12,15 @@
 #ifndef __S32V234_COMMON_H
 #define __S32V234_COMMON_H
 
-#include <configs/s32v.h>
-#include <asm/arch/imx-regs.h>
-
 #define CONFIG_S32V234
+
+#if CONFIG_FSL_LINFLEX_MODULE == 0
+#define LINFLEXUART_BASE	LINFLEXD0_BASE_ADDR
+#else
+#define LINFLEXUART_BASE	LINFLEXD1_BASE_ADDR
+#endif
+
+#include <configs/s32.h>
 
 /* Config DCU */
 #ifdef CONFIG_FSL_DCU_FB
@@ -32,9 +37,11 @@
 
 /* Run by default from DDR1 */
 #ifdef CONFIG_RUN_FROM_DDR0
-#define DDR_BASE_ADDR		0x80000000
+#define DDR_BASE_ADDR			0x80000000
+#define CONFIG_STANDALONE_LOAD_ADDR	0x80100000
 #else
-#define DDR_BASE_ADDR		0xC0000000
+#define DDR_BASE_ADDR			0xC0000000
+#define CONFIG_STANDALONE_LOAD_ADDR	0xC0100000
 #endif
 
 #define CONFIG_SYS_TEXT_BASE        0x3E820000 /* SDRAM */
